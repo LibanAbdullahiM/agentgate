@@ -52,6 +52,10 @@ public class Quote {
     @Column(name = "fully_available", nullable = false)
     private boolean fullyAvailable;
 
+    /** False for terminal products: Valio does not know their stock, so availability is an assumption. */
+    @Column(name = "stock_confirmed", nullable = false)
+    private boolean stockConfirmed = true;
+
     @Column(name = "earliest_delivery")
     private LocalDate earliestDelivery;
 

@@ -44,8 +44,19 @@ public class PurchaseOrder {
     @Column(name = "decision_reason")
     private String decisionReason;
 
+    /** Comma separated machine-readable reason codes from the guardrail engine (e.g. ORDER_ABOVE_LIMIT). */
+    @Column(name = "decision_codes")
+    private String decisionCodes;
+
     @Column(name = "decided_by")
     private UUID decidedBy;
+
+    /** The human approver's or rejecter's comment. */
+    @Column(name = "decided_comment")
+    private String decidedComment;
+
+    @Column(name = "decided_at")
+    private Instant decidedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

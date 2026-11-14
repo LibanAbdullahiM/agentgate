@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -104,6 +107,7 @@ public class ProductImportService {
         p.setUnit(unit == null ? "pcs" : truncate(unit, 20));
         p.setSupplier(truncate(text(node, "vendorName"), 255));
         p.setLotSize(decimal(node.path("allowedLotSize")));
+        p.setSearchText(buildSearchText(code, node));
         p.setActive(true);
         mapAllergens(node.path("synkkaData").path("classifications"), p);
         return p;
@@ -144,6 +148,28 @@ public class ProductImportService {
         p.setAllergens(known ? String.join(",", contains) : null);
         p.setAllergensMayContain(known ? String.join(",", mayContain) : null);
         p.setAllergensFreeFrom(known ? String.join(",", freeFrom) : null);
+    }
+
+    /** Names in all languages, brand and vendor, lower-cased, so a Finnish search finds an English-named product. */
+    private static String buildSearchText(String code, JsonNode node) {
+        JsonNode synkka = node.path("synkkaData");
+        List<String> parts = new ArrayList<>();
+        parts.add(code);
+        for (JsonNode n : synkka.path("names")) {
+            String v = text(n, "value");
+            if (v != null) {
+                parts.add(v);
+            }
+        }
+        String brand = text(synkka, "brand");
+        if (brand != null) {
+            parts.add(brand);
+        }
+        String vendor = text(node, "vendorName");
+        if (vendor != null) {
+            parts.add(vendor);
+        }
+        return String.join(" ", parts).toLowerCase(Locale.ROOT);
     }
 
     private static String truncate(String s, int max) {

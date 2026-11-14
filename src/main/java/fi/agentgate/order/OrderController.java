@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fi.agentgate.audit.AuditEvent;
+import fi.agentgate.audit.AuditNarrator;
 import fi.agentgate.audit.AuditService;
 import fi.agentgate.catalog.Product;
 import fi.agentgate.catalog.ProductRepository;
@@ -47,24 +48,23 @@ public class OrderController {
 
     public record OrderView(UUID id, UUID quoteId, OrderStatus status, String productCode, String productName,
                             BigDecimal quantity, BigDecimal unitPrice, String currency, BigDecimal total,
-                            LocalDate neededBy, String decisionReason, Instant createdAt, Instant updatedAt) {
-    }
-
-    public record TraceEntry(Instant at, String actorRole, String action, String decision, String reason,
-                             String details) {
+                            LocalDate neededBy, String decisionReason, Instant createdAt, Instant updatedAt,
+                            List<String> decisionCodes, String decidedComment, Instant decidedAt) {
     }
 
     private final OrderService service;
     private final QuoteRepository quotes;
     private final ProductRepository products;
     private final AuditService audit;
+    private final AuditNarrator narrator;
 
     public OrderController(OrderService service, QuoteRepository quotes, ProductRepository products,
-                           AuditService audit) {
+                           AuditService audit, AuditNarrator narrator) {
         this.service = service;
         this.quotes = quotes;
         this.products = products;
         this.audit = audit;
+        this.narrator = narrator;
     }
 
     /**
@@ -94,24 +94,28 @@ public class OrderController {
         return view(service.getVisible(principal, id));
     }
 
-    /** Human-readable history of everything that happened to this order and its quote. */
+    /**
+     * Everything that happened to this order and its quote, oldest first. Each entry has the raw facts and a
+     * plain-language {@code summary} that a non-technical approver can read.
+     */
     @GetMapping("/{id}/trace")
-    public List<TraceEntry> trace(@AuthenticationPrincipal AuthPrincipal principal, @PathVariable UUID id) {
+    public List<AuditNarrator.AuditView> trace(@AuthenticationPrincipal AuthPrincipal principal,
+                                               @PathVariable UUID id) {
         PurchaseOrder order = service.getVisible(principal, id);
         List<AuditEvent> events = audit.traceAll(List.of(
                 new String[]{"QUOTE", order.getQuoteId().toString()},
                 new String[]{"ORDER", order.getId().toString()}));
-        return events.stream()
-                .map(e -> new TraceEntry(e.getOccurredAt(), e.getActorRole(), e.getAction(),
-                        e.getDecision(), e.getReason(), e.getDetails()))
-                .toList();
+        return narrator.narrate(events);
     }
 
     private OrderView view(PurchaseOrder o) {
         Quote q = quotes.findById(o.getQuoteId()).orElseThrow();
         Product p = products.findById(q.getProductCode()).orElse(null);
+        List<String> codes = (o.getDecisionCodes() == null || o.getDecisionCodes().isBlank())
+                ? List.of() : List.of(o.getDecisionCodes().split(","));
         return new OrderView(o.getId(), o.getQuoteId(), o.getStatus(), q.getProductCode(),
                 p == null ? null : p.getName(), q.getQuantity(), q.getUnitPrice(), q.getCurrency(),
-                o.getTotal(), q.getNeededBy(), o.getDecisionReason(), o.getCreatedAt(), o.getUpdatedAt());
+                o.getTotal(), q.getNeededBy(), o.getDecisionReason(), o.getCreatedAt(), o.getUpdatedAt(),
+                codes, o.getDecidedComment(), o.getDecidedAt());
     }
 }

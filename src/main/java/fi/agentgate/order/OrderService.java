@@ -102,6 +102,7 @@ public class OrderService {
         order.setIdempotencyKey(idempotencyKey);
         order.setTotal(quote.getLineTotal());
         order.setDecisionReason(decision.explanation());
+        order.setDecisionCodes(String.join(",", decision.reasonCodes()));
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
         order.setStatus(switch (decision.outcome()) {

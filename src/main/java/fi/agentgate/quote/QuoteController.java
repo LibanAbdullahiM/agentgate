@@ -44,7 +44,8 @@ public class QuoteController {
                             BigDecimal quantity, BigDecimal unitPrice, String currency, BigDecimal lineTotal,
                             LocalDate neededBy, BigDecimal availableQuantity, boolean fullyAvailable,
                             LocalDate earliestDeliveryDate, Instant issuedAt, Instant expiresAt,
-                            String signature, String signatureAlgorithm, String signedPayload) {
+                            String signature, String signatureAlgorithm, String signedPayload,
+                            boolean stockConfirmed, BigDecimal shortfallQuantity) {
     }
 
     private final QuoteService service;
@@ -82,6 +83,7 @@ public class QuoteController {
                 p == null ? null : p.getUnit(), q.getQuantity(), q.getUnitPrice(), q.getCurrency(),
                 q.getLineTotal(), q.getNeededBy(), q.getAvailableQty(), q.isFullyAvailable(),
                 q.getEarliestDelivery(), q.getCreatedAt(), q.getExpiresAt(), q.getSignature(),
-                QuoteSigner.ALGORITHM, signer.canonical(q));
+                QuoteSigner.ALGORITHM, signer.canonical(q), q.isStockConfirmed(),
+                q.getQuantity().subtract(q.getAvailableQty()).max(BigDecimal.ZERO));
     }
 }

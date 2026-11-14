@@ -60,6 +60,10 @@ public class Product {
     @Column(name = "lot_size")
     private BigDecimal lotSize;
 
+    /** Lower-case names in all languages + code + brand + vendor, used by the catalog search. */
+    @Column(name = "search_text")
+    private String searchText;
+
     @Column(nullable = false)
     private boolean active = true;
 

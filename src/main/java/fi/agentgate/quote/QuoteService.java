@@ -50,6 +50,13 @@ public class QuoteService {
             throw ApiException.badRequest("DATE_IN_PAST", "neededBy must not be in the past");
         }
 
+        // Valio: the order quantity must be a multiple of the product's lot size (in sales units).
+        BigDecimal lot = product.getLotSize();
+        if (lot != null && lot.signum() > 0 && quantity.remainder(lot).signum() != 0) {
+            throw ApiException.badRequest("LOT_SIZE_VIOLATION", "Quantity must be a multiple of "
+                    + lot.stripTrailingZeros().toPlainString() + " " + product.getUnit() + " for " + product.getCode());
+        }
+
         PriceInfo price = valio.getPrice(product.getCode(), neededBy);
         if (price == null || price.unitPrice() == null) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PRICE_UNAVAILABLE",
@@ -98,6 +105,7 @@ public class QuoteService {
         q.setNeededBy(neededBy);
         q.setAvailableQty(available.min(qty));
         q.setFullyAvailable(fullyAvailable);
+        q.setStockConfirmed(availability.amountKnown() || !availability.deliverable());
         q.setEarliestDelivery(availability.availableDate());
         q.setCreatedAt(now);
         q.setExpiresAt(now.plus(ttlMinutes, ChronoUnit.MINUTES));
