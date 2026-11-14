@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: agentgate
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/agentgate}
+    username: ${DB_USER:agentgate}
+    password: ${DB_PASSWORD:agentgate}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:F+IYDn2daOX4hC1Jtrix9doXF0ZkVvP4NbTBkRdgQT6S5UE+JzpyzenL9s1BzAbY}
+    ttl-minutes: 120
+  quote:
+    signing-secret: ${QUOTE_SIGNING_SECRET:nl8HaMbin1VOu2qwGnGi0wU/FVlXJJzLd5uzz/MJcsrULQSAV5Vpet5XjkIaJLqi}
+    ttl-minutes: 30
+  cors:
+    origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+  seed:
+    enabled: ${SEED_ENABLED:true}
+    password: ${SEED_PASSWORD:demo1234}
+
+valio:
+  # mock | live
+  mode: ${VALIO_MODE:mock}
+  base-url: ${VALIO_BASE_URL:https://junction26.valioaimo.fi/api}
+  api-key: ${VALIO_API_KEY:}
+
+  pricing-path: ${VALIO_PRICING_PATH:/pricing}
+  availability-path: ${VALIO_AVAILABILITY_PATH:/availability}
+  customer-id: ${VALIO_CUSTOMER_ID:123}
+  product-file: ${VALIO_PRODUCT_FILE:data/valio_aimo_junction26_product_data.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

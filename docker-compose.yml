@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: agentgate
+      POSTGRES_USER: agentgate
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentgate}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentgate -d agentgate"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/agentgate
+      DB_USER: agentgate
+      DB_PASSWORD: ${DB_PASSWORD:-agentgate}
+      JWT_SECRET: ${JWT_SECRET:?copy .env.example to .env and set JWT_SECRET}
+      QUOTE_SIGNING_SECRET: ${QUOTE_SIGNING_SECRET:?copy .env.example to .env and set QUOTE_SIGNING_SECRET}
+      VALIO_MODE: ${VALIO_MODE:-mock}
+      VALIO_API_KEY: ${VALIO_API_KEY:-}
+      VALIO_PRODUCT_FILE: /app/data/valio_aimo_junction26_product_data.json
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      SEED_ENABLED: ${SEED_ENABLED:-true}
+      SEED_PASSWORD: ${SEED_PASSWORD:-demo1234}
+    volumes:
+      - ./data:/app/data:ro
+
+volumes:
+  pgdata:

@@ -1,0 +1,9 @@
+target/
+.env
+*.log
+.idea/
+*.iml
+.vscode/
+# challenge datasets are only for use inside the challenge: keep them out of git
+data/*
+!data/.gitkeep
